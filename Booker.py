@@ -5,9 +5,11 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep, perf_counter
-
+from datetime import datetime, timedelta
+import pandas as pd
 
 
 class Booker:
@@ -70,14 +72,59 @@ class Booker:
             EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[5]/div[2]/button""")))
         final_booking.click()
 
+    def close(self):
+
+        self.driver.close()
+
+def get_id():
+
+    df = pd.read_csv(r'.\my_dates.csv', sep=';', decimal=',')
+
+    df.dropna(inplace=True)
+
+    df['date'] = df['date'].astype('str')
+    df['date_id'] = df['date_id'].astype('int')
+
+    date = datetime.today().date() + timedelta(4)
+
+    date = date.strftime('%d/%m/%Y')
+
+    try:
+
+        my_id = df.loc[(df['date'] == date)]['date_id'].to_list()[0]
+
+    except IndexError:
+
+        my_id = None
+
+    return my_id
+
+def main():
+
+    start_time = perf_counter()
+    swimpool_id = 79
+    event_id = get_id()
+
+    if event_id is None:
+        print("No Booking to be done today")
+    else:
+
+        bot = Booker()
+
+        try:
+
+            bot.get_booking(swimpool_id, event_id)
+
+            end_time = perf_counter()
+
+            print(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
+            bot.close()
+
+        except NoSuchElementException:
+
+            print("Event not ready for Booking")
+
 
 if __name__ == '__main__':
 
-    start_time = perf_counter()
-
-    bot = Booker()
-    bot.get_booking(47, 2644214)
-
-    end_time = perf_counter()
-
-    print(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
+    main()
