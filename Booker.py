@@ -1,3 +1,4 @@
+import logging
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -99,14 +100,20 @@ def get_id():
 
     return my_id
 
+
 def main():
+
+    # name = f"swimlog_{datetime.now().strftime('%d%m%Y_%H%M%S')}.log"
+    name = f"swimlog.log"
+
+    logging.basicConfig(filename=name, level=logging.DEBUG)
 
     start_time = perf_counter()
     swimpool_id = 79
     event_id = get_id()
 
     if event_id is None:
-        print("No Booking to be done today")
+        logging.info("No Booking to be done today")
     else:
 
         bot = Booker()
@@ -117,12 +124,12 @@ def main():
 
             end_time = perf_counter()
 
-            print(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
+            logging.info(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
             bot.close()
 
         except NoSuchElementException:
 
-            print("Event not ready for Booking")
+            logging.info("Event not ready for Booking")
 
 
 if __name__ == '__main__':
