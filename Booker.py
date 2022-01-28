@@ -81,7 +81,10 @@ class Booker:
 
 def get_id():
 
-    df = pd.read_csv(r'.\my_dates.csv', sep=';', decimal=',')
+    try:
+        df = pd.read_csv(r'.\my_dates.csv', sep=';', decimal=',')
+    except:
+        df = pd.read_csv(r'./my_dates.csv', sep=';', decimal=',')
 
     df.dropna(inplace=True)
 
