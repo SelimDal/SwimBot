@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
-from time import sleep, perf_counter
+from time import perf_counter
 from datetime import datetime, timedelta
 import pandas as pd
 
@@ -26,18 +26,19 @@ class Booker:
     def get_booking(self, bad_id, event_id):
 
         self.driver.get(f"""https://pretix.eu/Baeder/{bad_id}/{event_id}/""")
-        self.driver.find_element(By.XPATH, """//*[@id="item_70748"]""").send_keys(1)
-        self.driver.find_element(By.XPATH, """//*[@id="item_70748"]""").send_keys(Keys.RETURN)
+        self.driver.find_element(By.XPATH, """//*[@id="item_71664"]""").send_keys(1)
+        self.driver.find_element(By.XPATH, """//*[@id="item_71664"]""").send_keys(Keys.RETURN)
 
-
-        continue_butt = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/details/div/div/div[3]/form/p/button""")))
+        continue_butt = self.wait.until(EC.visibility_of_element_located((By.XPATH,
+                                                                          """/html/body/div[1]/main/details/div/div/div[3]/form/p/button""")))
         continue_butt.click()
 
         continue_butt_2 = self.wait.until(EC.visibility_of_element_located(
             (By.XPATH, """/html/body/div[1]/main/form/div[2]/div[2]/button""")))
         continue_butt_2.click()
 
-        cont_guest = self.wait.until(EC.visibility_of_element_located((By.XPATH, """//*[@id="input_customer_guest"]""")))
+        cont_guest = self.wait.until(EC.visibility_of_element_located((By.XPATH,
+                                                                       """//*[@id="input_customer_guest"]""")))
         cont_guest.click()
 
         continue_butt_3 = self.wait.until(
@@ -77,6 +78,7 @@ class Booker:
 
         self.driver.close()
 
+
 def get_id():
 
     df = pd.read_csv(r'.\my_dates.csv', sep=';', decimal=',')
@@ -93,6 +95,7 @@ def get_id():
     try:
 
         my_id = df.loc[(df['date'] == date)]['date_id'].to_list()[0]
+        print(my_id)
 
     except IndexError:
 
@@ -105,10 +108,8 @@ def main():
 
     # name = f"swimlog_{datetime.now().strftime('%d%m%Y_%H%M%S')}.log"
     name = f"swimlog.log"
-
     logging.basicConfig(filename=name, level=logging.DEBUG)
 
-    start_time = perf_counter()
     swimpool_id = 79
     event_id = get_id()
 
@@ -117,19 +118,30 @@ def main():
     else:
 
         bot = Booker()
+        booking_successful = False
+        counter = 1
+        start_time_booking = perf_counter()
 
-        try:
+        while booking_successful is False:
 
-            bot.get_booking(swimpool_id, event_id)
+            try:
+                start_time = perf_counter()
+                bot.get_booking(swimpool_id, event_id)
+                end_time = perf_counter()
+                logging.info(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
+                bot.close()
+                booking_successful = True
 
-            end_time = perf_counter()
+            except NoSuchElementException:
+                logging.info(f"Booking attempt # {counter} - {datetime.now().strftime('%Y-%d-%m %H:%M:%S')}")
+                pass
 
-            logging.info(f"""Total booking lasted {round(end_time - start_time, 2)} seconds""")
-            bot.close()
+            counter += 1
+            end_time_booking = perf_counter()
 
-        except NoSuchElementException:
-
-            logging.info("Event not ready for Booking")
+            if (end_time_booking - start_time_booking) > (5*60):
+                logging.info(f"All attempts timed out - {datetime.now().strftime('%Y-%d-%m %H:%M:%S')}")
+                booking_successful = True
 
 
 if __name__ == '__main__':
