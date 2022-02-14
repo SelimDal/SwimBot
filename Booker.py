@@ -6,9 +6,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
-from time import perf_counter
+from time import perf_counter, sleep
 from datetime import datetime, timedelta
 import pandas as pd
 
@@ -18,16 +18,24 @@ class Booker:
     def __init__(self):
 
         options = Options()
-        options.add_argument("""--headless""")
+        # options.add_argument("""--headless""")
         options.add_argument('--no-sandbox')
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         self.wait = WebDriverWait(self.driver, 15)
+        self.wait2 = WebDriverWait(self.driver, 1)
 
     def get_booking(self, bad_id, event_id):
 
         self.driver.get(f"""https://pretix.eu/Baeder/{bad_id}/{event_id}/""")
-        self.driver.find_element(By.XPATH, """//*[@id="item_71664"]""").send_keys(1)
-        self.driver.find_element(By.XPATH, """//*[@id="item_71664"]""").send_keys(Keys.RETURN)
+
+        button_id = "71664"
+
+        try:
+            self.driver.find_element(By.XPATH, f"""//*[@id="item_{button_id}"]""").send_keys(1)
+            self.driver.find_element(By.XPATH, f"""//*[@id="item_{button_id}"]""").send_keys(Keys.RETURN)
+        except TimeoutException:
+            cart = self.driver.find_element(By.XPATH, f"""//*[@id="item_{button_id}"]""")
+            cart.click()
 
         continue_butt = self.wait.until(EC.visibility_of_element_located((By.XPATH,
                                                                           """/html/body/div[1]/main/details/div/div/div[3]/form/p/button""")))
@@ -45,6 +53,8 @@ class Booker:
             EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[2]/div[2]/button""")))
         continue_butt_3.click()
 
+        """/html/body/div[1]/main/form/div[5]/div[2]/button"""
+
         email_1 = self.wait.until(EC.visibility_of_element_located((By.XPATH, """//*[@id="id_email"]""")))
         email_1.send_keys("lbrouwer@live.nl")
 
@@ -52,23 +62,51 @@ class Booker:
         email_2.send_keys("lbrouwer@live.nl")
         email_2.send_keys(Keys.RETURN)
 
-        first_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[1]/div/div/input[1]""")))
-        first_name.send_keys("leonard")
+        sleep(15)
 
-        last_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[1]/div/div/input[2]""")))
-        last_name.send_keys("brouwer")
+        # first_name = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[1]/div/div/input[1]""")))
 
-        phone = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[2]/div/div/input""")))
-        phone.send_keys(17622359247)
+        try:
+            first_name = self.wait2.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div/div/div/input[1]""")))
+            first_name.send_keys("leonard")
+        except TimeoutException:
+            print("no first name to give")
 
-        address = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[3]/div/input""")))
-        address.send_keys("Warschauer Str 60, 10243, Berlin")
+        # last_name = self.wait.until(EC.visibility_of_element_located(
+        #     (By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[1]/div/div/input[2]""")))
 
-        continue_butt_4 = self.wait.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[2]/div[2]/button""")))
-        continue_butt_4.click()
+        try:
+            last_name = self.wait2.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div/div/div/input[2]""")))
+            last_name.send_keys("brouwer")
+        except TimeoutException:
+            print("no last name to give")
 
-        vacc_conf = self.wait.until(EC.visibility_of_element_located((By.XPATH, """//*[@id="input_confirm_confirm_text_0"]""")))
-        vacc_conf.click()
+        try:
+            phone = self.wait2.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[2]/div/div/input""")))
+            phone.send_keys(17622359247)
+
+            address = self.wait2.until(EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[1]/details[2]/div/div/div[2]/div[3]/div/input""")))
+            address.send_keys("Warschauer Str 60, 10243, Berlin")
+
+        except TimeoutException:
+            print("No more phone or no address to give")
+
+        try:
+            continue_butt_4 = self.wait2.until(
+                EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[2]/div[2]/button""")))
+            continue_butt_4.click()
+        except:
+            print("No need to press next")
+
+        try:
+            vacc_conf = self.wait.until(
+                EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[4]/div[2]/div/label""")))
+            vacc_conf.click()
+
+        except TimeoutException:
+            vacc_conf = self.wait.until(
+                EC.visibility_of_element_located((By.XPATH, """//*[@id="input_confirm_confirm_text_0"]""")))
+            vacc_conf.click()
 
         final_booking = self.wait.until(
             EC.visibility_of_element_located((By.XPATH, """/html/body/div[1]/main/form/div[5]/div[2]/button""")))
@@ -109,7 +147,7 @@ def get_id():
 
 def main():
 
-    # name = f"swimlog_{datetime.now().strftime('%d%m%Y_%H%M%S')}.log"
+    name = f"swimlog_{datetime.now().strftime('%d%m%Y_%H%M%S')}.log"
     name = f"swimlog.log"
     logging.basicConfig(filename=name, level=logging.DEBUG)
 
@@ -145,6 +183,7 @@ def main():
             if (end_time_booking - start_time_booking) > (5*60):
                 logging.info(f"All attempts timed out - {datetime.now().strftime('%Y-%d-%m %H:%M:%S')}")
                 booking_successful = True
+
 
 
 if __name__ == '__main__':
